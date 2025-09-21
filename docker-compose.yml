@@ -1,0 +1,74 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_USER: gemini_app
+      POSTGRES_DB: gemini_db
+      TZ: Europe/Warsaw
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gemini_app -d gemini_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    secrets:
+      - db_password
+    restart: always
+
+  backend:
+    build:
+      context: ../gemini-service
+      dockerfile: Dockerfile
+    environment:
+      TZ: Europe/Warsaw
+      SPRING_CONFIG_IMPORT: "optional:file:/run/secrets/backend.yml"
+    secrets:
+      - source: backend_properties
+        target: backend.yml
+        mode: 0440
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: always
+
+  web:
+    build:
+      context: ../gemini-ui
+      dockerfile: Dockerfile
+      args:
+        APP_DOMAIN: ${APP_DOMAIN}
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      TZ: Europe/Warsaw
+      APP_DOMAIN: ${APP_DOMAIN}
+      LE_EMAIL: ${LE_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: always
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+secrets:
+  db_password:
+    file: ./secrets/db_password
+  backend_properties:
+    file: ./secrets/backend.yml
