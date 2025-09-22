@@ -3,7 +3,6 @@
 
 gemini-deploy.iml
 docker-compose.override.yml
-Caddyfile.dev
 
 pgdata
 secrets
