@@ -1,6 +1,8 @@
 services:
   db:
     image: postgres:17
+    ports:
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_USER: gemini_app
@@ -19,9 +21,7 @@ services:
     restart: always
 
   backend:
-    build:
-      context: ../gemini-service
-      dockerfile: Dockerfile
+    image: cah1r/gemini-service:latest
     environment:
       TZ: Europe/Warsaw
       SPRING_CONFIG_IMPORT: "optional:file:/run/secrets/backend.yml"
@@ -43,11 +43,7 @@ services:
     restart: always
 
   web:
-    build:
-      context: ../gemini-ui
-      dockerfile: Dockerfile
-      args:
-        APP_DOMAIN: ${APP_DOMAIN}
+    image: cah1r/gemini-ui:latest
     depends_on:
       - backend
     ports:
