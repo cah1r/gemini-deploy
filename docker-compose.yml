@@ -21,7 +21,7 @@ services:
     restart: always
 
   backend:
-    image: cah1r/gemini-service:latest
+    image: cah1r/gemini-service:develop
     environment:
       TZ: Europe/Warsaw
       SPRING_CONFIG_IMPORT: "optional:file:/run/secrets/backend.yml"
@@ -43,7 +43,7 @@ services:
     restart: always
 
   web:
-    image: cah1r/gemini-ui:latest
+    image: cah1r/gemini-ui:develop
     depends_on:
       - backend
     ports:
